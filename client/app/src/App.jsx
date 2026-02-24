@@ -4,6 +4,10 @@ export const App = () => {
   const [books, setBooks] = React.useState([]);
   const [title, setTitle] = React.useState("");
   const [releaseYear, setReleaseYear] = React.useState(0);
+  const [editReleaseYear, setEditReleaseYear] = React.useState(0);
+
+  const [newTitle, setNewTitle] = React.useState("");
+  const [editingId, setEditingId] = React.useState(null);
 
   React.useEffect(() => {
     const fetchBooks = async () => {
@@ -23,16 +27,46 @@ export const App = () => {
       title: title,
       release_year: releaseYear,
     };
+
+    if (!title.trim()) {
+      alert("Please enter a title");
+      return;
+    }
+
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/books/create", {
+      const response = await fetch("http://127.0.0.1:8000/api/books/create/", {
         method: "POST",
         headers: {
-          "Content-Type": "application/JSON",
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(bookData),
       });
       const data = await response.json();
       setBooks((prev) => [...prev, data]);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  const updateBook = async (id) => {
+    try {
+      const currentBook = books.find((b) => b.id === id);
+
+      const response = await fetch(`http://127.0.0.1:8000/api/books/${id}/`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: newTitle,
+          release_year: editReleaseYear,
+        }),
+      });
+      const data = await response.json();
+      setBooks((prev) => prev.map((b) => (b.id === id ? data : b)));
+      setEditingId(null);
+      setNewTitle("");
+      setReleaseYear(0);
     } catch (err) {
       console.log(err);
     }
@@ -47,7 +81,7 @@ export const App = () => {
           <input
             type="text"
             placeholder="Book title..."
-            className="border-2 p-1 mx-2 rounded-lg hover:border-indigo-500 transition"
+            className="border-2 p-1 mx-2 rounded-lg hover:border-indigo-500 transition max-w-xs"
             onChange={(e) => setTitle(e.target.value)}
           />
           <input
@@ -63,18 +97,57 @@ export const App = () => {
             Add book
           </button>
         </div>
-        <div className=" mt-8 flex flex-col justify-center border border-1/2 border-amber-50/10 p-5 rounded-md">
+        <div className="mt-8 flex flex-col justify-center border border-amber-50/10 p-5 rounded-md">
           {books.map((item) => {
+            const isEditing = editingId === item.id;
             return (
-              <div>
-                <p>
-                  <span className="font-semibold">Title </span>: {item.title}
-                </p>
-                <p>
-                  <span className="font-semibold">Year </span>:{" "}
-                  {item.release_year}
-                </p>
-                <hr className="m-1 text-white/10 mb-4" />
+              <div key={item.id} className="mb-4">
+                <div className="flex items-start gap-4">
+                  <div>
+                    <p>
+                      <span className="font-semibold">Title </span>:
+                      {isEditing ? (
+                        <>
+                          <input
+                            className="ml-2 border rounded px-2 py-1"
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                          />
+                          <input
+                            type="text"
+                            className="ml-2 border rounded px-2 py-1"
+                            value={editReleaseYear}
+                            onChange={(e) => setEditReleaseYear(e.target.value)}
+                            placeholder="Release year"
+                          />
+                        </>
+                      ) : (
+                        <span className="ml-2 ">{item.title}</span>
+                      )}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Year </span>:{" "}
+                      {item.release_year}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (isEditing) {
+                        updateBook(item.id);
+                      } else {
+                        setEditingId(item.id);
+                        setNewTitle(item.title);
+                        setEditReleaseYear(item.release_year);
+                      }
+                    }}
+                    className="ml-auto px-2 py-1 text-sm border rounded cursor-pointer hover:bg-gray-950 transition active:bg-indigo-400"
+                  >
+                    {isEditing ? "Save" : "Edit"}
+                  </button>
+                </div>
+
+                <hr className="m-1 text-white/10 mt-2" />
               </div>
             );
           })}
