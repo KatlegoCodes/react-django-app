@@ -33,6 +33,8 @@ export const App = () => {
       return;
     }
 
+    console.log("Sending book data:", bookData);
+
     try {
       const response = await fetch("http://127.0.0.1:8000/api/books/create/", {
         method: "POST",
@@ -41,8 +43,13 @@ export const App = () => {
         },
         body: JSON.stringify(bookData),
       });
+
+      console.log("Response status:", response.status);
       const data = await response.json();
+      console.log("Response data:", data);
       setBooks((prev) => [...prev, data]);
+      setTitle("");
+      setEditReleaseYear(0);
     } catch (err) {
       console.log(err);
     }
